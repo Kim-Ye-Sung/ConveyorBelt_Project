@@ -14,6 +14,35 @@
 
     - OS (Raspberry Pi): Ubuntu / Raspberry Pi OS
 
+## **STM32CubeMX학습**
+
+### MCU
+- CPU에 디지털 신호,PWM,통신과 같이 임베디드 시스템에서 많이 사용되는 주변장치를 연결하여 하나의 칩으로 제작된 형태
+- Cortex - A,R,M으로 나뉘는데 A쪽이 높은 성능
+    - A, 스마트폰,태블릿,PC,고성능 임베디드 프로세서
+    - R, 실시간 프로세싱 고성능 임베디드 프로세서, 의료기기,항공우주, 자동차 등
+    - M, 초저전력,실시간 처리,범용적 사용
+- stm32 f446re는 M4의 기능
+
+### 인터럽트
+- Polling 방식
+    - 무언가 행동을 할 때 다른 행동은 대기
+
+- Interrupt 방식
+    - interrupt handler를 통해 행동을 진행하고 있다가 다른 행동도 가능
+- NVIC(Nested Vectored Interrupt Controller)
+    - M시리즈를 사용하는 경우 APM에서 개발한 NVIC라는 인터럽트 컨트롤러를 공통적으로 사용
+
+- 처리방법 
+    - 인터럽트 호출할 함수인 ISR(Interrupt Service Routine)를 정의
+    - 우선순위 저장
+    - 우선순위에 따라 ISR 수행
+### 타이머&카운터
+- ARR(Auto ReLoad Register) : 최대 카운트 값 
+- CCR(Compare Capture Register) : 카운트 값을 설정
+- ![alt text](image.png)
+- 오버플로우가 될때마다 발생하는 원리
+
 ## 동직 시나리오 요약
 - 대기 상태: 모터(로봇 팔)는 90도를 유지하며 대기.
 
