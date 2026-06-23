@@ -87,7 +87,7 @@ void MX_FREERTOS_Init(void) {
 
 	/* Create the semaphores(s) */
 	/* creation of canSemaphore */
-	canSemaphoreHandle = osSemaphoreNew(1, 1, &canSemaphore_attributes);
+	canSemaphoreHandle = osSemaphoreNew(1, 0, &canSemaphore_attributes);
 
 	/* USER CODE BEGIN RTOS_SEMAPHORES */
 	/* add semaphores, ... */
@@ -167,7 +167,7 @@ void motorTask01(void *argument) {
 			/* 2. 그리퍼 닫기 (잡기) */
 			Servo_SetAngle(TIM_CHANNEL_2, GRIP_CLOSE);
 			osDelay(500);
-			CAN_Send(0x125, 0x01);   // 1번 벨트 작동 신호
+			CAN_Send(0x124, 0x01);   // 1번 벨트 작동 신호
 
 			/* 3. 팔 180도로 이동 */
 			Servo_SetAngle(TIM_CHANNEL_1, ARM_180);
@@ -181,8 +181,8 @@ void motorTask01(void *argument) {
 			Servo_SetAngle(TIM_CHANNEL_1, ARM_90);
 			osDelay(600);
 
-			CAN_Send(0x125, 0x02);   // 2번 벨트 작동 신호
-			CAN_Send(0x124, 0x01);   // 카메라(0x124)에게: 작업 완료
+			CAN_Send(0x124, 0x02);   // 2번 벨트 작동 신호
+			CAN_Send(0x125, 0x01);   // 카메라(0x124)에게: 작업 완료
 		}
 	}
 	/* USER CODE END motorTask01 */
