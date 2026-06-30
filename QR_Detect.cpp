@@ -180,8 +180,14 @@ int main() {
     rfilter[1].can_id   = 0x126;
     rfilter[1].can_mask = CAN_SFF_MASK; 
 
-    setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, &rfilter, sizeof(rfilter));
 
+    
+    setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, &rfilter, sizeof(rfilter));
+    
+    int loopback = 0; // 0: 루프백 비활성화, 1: 활성화(기본값)
+    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &loopback, sizeof(loopback)) < 0) {
+        perror("Loopback disable error");
+    }
 
 
     //소켓 논블로킹 모드 변경
