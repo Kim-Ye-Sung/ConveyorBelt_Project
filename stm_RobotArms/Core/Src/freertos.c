@@ -22,11 +22,12 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
-#include "math.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "tim.h"
-#include "can.h"
+#include "usart.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,20 +51,28 @@
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = { .name = "defaultTask",
-		.stack_size = 128 * 4, .priority = (osPriority_t) osPriorityNormal, };
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* Definitions for motorTask */
 osThreadId_t motorTaskHandle;
-const osThreadAttr_t motorTask_attributes = { .name = "motorTask", .stack_size =
-		256 * 4, .priority = (osPriority_t) osPriorityNormal, };
-/* Definitions for canSemaphore */
-osSemaphoreId_t canSemaphoreHandle;
-const osSemaphoreAttr_t canSemaphore_attributes = { .name = "canSemaphore" };
+const osThreadAttr_t motorTask_attributes = {
+  .name = "motorTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for armQueue */
+osMessageQueueId_t armQueueHandle;
+const osMessageQueueAttr_t armQueue_attributes = {
+  .name = "armQueue"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 void Servo_SetAngle(uint32_t channel, uint16_t pulse_us);
-void CAN_Send(uint32_t id, uint8_t data);
+void UART_SendString(const char *str);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -72,50 +81,49 @@ void motorTask01(void *argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /**
- * @brief  FreeRTOS initialization
- * @param  None
- * @retval None
- */
+  * @brief  FreeRTOS initialization
+  * @param  None
+  * @retval None
+  */
 void MX_FREERTOS_Init(void) {
-	/* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
 
-	/* USER CODE END Init */
+  /* USER CODE END Init */
 
-	/* USER CODE BEGIN RTOS_MUTEX */
+  /* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
-	/* USER CODE END RTOS_MUTEX */
+  /* USER CODE END RTOS_MUTEX */
 
-	/* Create the semaphores(s) */
-	/* creation of canSemaphore */
-	canSemaphoreHandle = osSemaphoreNew(1, 0, &canSemaphore_attributes);
-
-	/* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
 	/* add semaphores, ... */
-	/* USER CODE END RTOS_SEMAPHORES */
+  /* USER CODE END RTOS_SEMAPHORES */
 
-	/* USER CODE BEGIN RTOS_TIMERS */
+  /* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
-	/* USER CODE END RTOS_TIMERS */
+  /* USER CODE END RTOS_TIMERS */
 
-	/* USER CODE BEGIN RTOS_QUEUES */
+  /* Create the queue(s) */
+  /* creation of armQueue */
+  armQueueHandle = osMessageQueueNew (8, 1, &armQueue_attributes);
+
+  /* USER CODE BEGIN RTOS_QUEUES */
 	/* add queues, ... */
-	/* USER CODE END RTOS_QUEUES */
+  /* USER CODE END RTOS_QUEUES */
 
-	/* Create the thread(s) */
-	/* creation of defaultTask */
-	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL,
-			&defaultTask_attributes);
+  /* Create the thread(s) */
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-	/* creation of motorTask */
-	motorTaskHandle = osThreadNew(motorTask01, NULL, &motorTask_attributes);
+  /* creation of motorTask */
+  motorTaskHandle = osThreadNew(motorTask01, NULL, &motorTask_attributes);
 
-	/* USER CODE BEGIN RTOS_THREADS */
+  /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
-	/* USER CODE END RTOS_THREADS */
+  /* USER CODE END RTOS_THREADS */
 
-	/* USER CODE BEGIN RTOS_EVENTS */
+  /* USER CODE BEGIN RTOS_EVENTS */
 	/* add events, ... */
-	/* USER CODE END RTOS_EVENTS */
+  /* USER CODE END RTOS_EVENTS */
 
 }
 
@@ -126,17 +134,26 @@ void MX_FREERTOS_Init(void) {
  * @retval None
  */
 /* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument) {
-	/* USER CODE BEGIN StartDefaultTask */
+void StartDefaultTask(void *argument)
+{
+  /* USER CODE BEGIN StartDefaultTask */
 	/* Infinite loop */
+	/* 디버깅용: 버튼(B1) 누르면 큐에 강제로 넣어서
+	   실제 UART 신호 없이도 motorTask가 정상 동작하는지 테스트 */
 	for (;;) {
 		if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET) {
-			osSemaphoreRelease(canSemaphoreHandle);
+			uint8_t dummy = 1;
+			osStatus_t status = osMessageQueuePut(armQueueHandle, &dummy, 0, 0);
+
+			if (status == osOK) {
+				/* 큐 삽입 성공 시 LED 짧게 깜빡여서 확인 (선택 사항) */
+				HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+			}
 			osDelay(500);
 		}
 		osDelay(10);
 	}
-	/* USER CODE END StartDefaultTask */
+  /* USER CODE END StartDefaultTask */
 }
 
 /* USER CODE BEGIN Header_motorTask01 */
@@ -146,8 +163,9 @@ void StartDefaultTask(void *argument) {
  * @retval None
  */
 /* USER CODE END Header_motorTask01 */
-void motorTask01(void *argument) {
-	/* USER CODE BEGIN motorTask01 */
+void motorTask01(void *argument)
+{
+  /* USER CODE BEGIN motorTask01 */
 	/* Infinite loop */
 	/* 펄스폭 정의 (1us 단위) */
 	const uint16_t ARM_90 = 1500;  // 팔 기본 90도
@@ -155,6 +173,8 @@ void motorTask01(void *argument) {
 	const uint16_t ARM_180 = 2500;  // 팔 180도
 	const uint16_t GRIP_OPEN = 1500; // 그리퍼 열림(가정값)
 	const uint16_t GRIP_CLOSE = 500;  // 그리퍼 닫힘/잡기(가정값)
+
+	uint8_t rxData; // 큐에서 받아올 데이터 저장용
 
 	/* ── PWM 출력 시작 (태스크 안에서 직접 켜기) ── */
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
@@ -167,14 +187,13 @@ void motorTask01(void *argument) {
 
 	for (;;) {
 
-		/* 0x124 신호(세마포어) 올 때까지 대기 — 안 오면 여기서 블로킹 */
-		if (osSemaphoreAcquire(canSemaphoreHandle, osWaitForever) == osOK) {
+		/* "armrun" 신호(큐) 올 때까지 대기 — 안 오면 여기서 블로킹 */
+		if (osMessageQueueGet(armQueueHandle, &rxData, NULL, osWaitForever) == osOK) {
 			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 			osDelay(100);
 			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 			osDelay(100);
-			float pos1 = ARM_90;
-			/* 1. 팔 180도로 이동 1초로 고정*/
+
 			/* 1. 팔 180도로 이동 - PD 제어 */
 			{
 				float target = ARM_180;
@@ -201,14 +220,12 @@ void motorTask01(void *argument) {
 				Servo_SetAngle(TIM_CHANNEL_1, ARM_180);      // 끝값 정확히 보정
 			}               // 이동 완료까지 대기
 
-			/* 2. 그리퍼 닫기 (잡기) */
+			/* 2. 그리퍼 닫기 (잡기) → "grip" 알림 */
 			Servo_SetAngle(TIM_CHANNEL_2, GRIP_CLOSE);
 			osDelay(500);
-			CAN_Send(0x124, 0x01);   // 1번 벨트 작동 신호
-			CAN_Send(0x126, 0x01);   // 1번 벨트 작동 신호
+			UART_SendString("grip\n");
 
 			/* 3. 팔 0도로 이동 */
-
 			for (float pos = ARM_180; pos >= ARM_0; pos = pos / 1.035) {
 				if (pos <= 1) {
 					pos = 0;
@@ -221,15 +238,13 @@ void motorTask01(void *argument) {
 			Servo_SetAngle(TIM_CHANNEL_2, GRIP_OPEN);
 			osDelay(500);
 
-			/* 5. 팔 90도로 복귀 */
+			/* 5. 팔 90도로 복귀 → "finish" 알림 */
 			Servo_SetAngle(TIM_CHANNEL_1, ARM_90);
 			osDelay(600);
-
-			CAN_Send(0x124, 0x02);   // 2번 벨트 작동 신호
-			CAN_Send(0x125, 0x01);   // 카메라(0x124)에게: 작업 완료
+			UART_SendString("finish\n");
 		}
 	}
-	/* USER CODE END motorTask01 */
+  /* USER CODE END motorTask01 */
 }
 
 /* Private application code --------------------------------------------------*/

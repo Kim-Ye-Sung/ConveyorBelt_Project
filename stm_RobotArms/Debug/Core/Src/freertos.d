@@ -28,7 +28,6 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_can.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h \
@@ -39,7 +38,7 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
- ../Core/Inc/tim.h ../Core/Inc/main.h ../Core/Inc/can.h
+ ../Core/Inc/tim.h ../Core/Inc/main.h ../Core/Inc/usart.h
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
@@ -70,7 +69,6 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:
-../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_can.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h:
@@ -83,4 +81,4 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 ../Core/Inc/tim.h:
 ../Core/Inc/main.h:
-../Core/Inc/can.h:
+../Core/Inc/usart.h:
